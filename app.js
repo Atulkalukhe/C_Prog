@@ -33,6 +33,79 @@
     file:{label:'Virtual file',kind:'file',code:'#include <stdio.h>\n\nint main(void) {\n    FILE *file = fopen("notes.txt", "w");\n    if (file != NULL) {\n        fprintf(file, "Keep practicing!\\n");\n        fclose(file);\n    }\n    puts("File saved and closed.");\n    return 0;\n}'}
   };
 
+  // Two additional, complete programs for every course unit. Each one uses a
+  // visual model the browser simulator knows how to explain.
+  const programExamples = {
+    overview:[
+      {title:'Print a friendly message',goal:'Use puts to print one line without a format string.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    puts("Welcome to C!");\n    return 0;\n}'},
+      {title:'Print two lines',goal:'Notice that each puts call ends its line.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    puts("First step");\n    puts("Next step");\n    return 0;\n}'}
+    ],
+    structure:[
+      {title:'Name each step',goal:'Read the function body from top to bottom.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    puts("Start");\n    puts("Practice");\n    puts("Finish");\n    return 0;\n}'},
+      {title:'Return a status',goal:'A zero return value tells the operating system the program finished successfully.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    puts("The program is complete.");\n    return 0;\n}'}
+    ],
+    types:[
+      {title:'Store a temperature',goal:'Initialize an integer and print its value.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    int temperature = 18;\n    printf("Temperature: %d C\\n", temperature);\n    return 0;\n}'},
+      {title:'Update a counter',goal:'Change a variable, then print the new value.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    int visitors = 4;\n    visitors = visitors + 1;\n    printf("Visitors: %d\\n", visitors);\n    return 0;\n}'}
+    ],
+    operators:[
+      {title:'Calculate a total',goal:'Use parentheses to make the order of arithmetic clear.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    int total = (3 + 2) * 4;\n    printf("Total: %d\\n", total);\n    return 0;\n}'},
+      {title:'Find a remainder',goal:'The % operator gives the remainder after integer division.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    int remainder = 17 % 5;\n    printf("Remainder: %d\\n", remainder);\n    return 0;\n}'}
+    ],
+    io:[
+      {title:'Format a small receipt',goal:'Match %s to text and %d to an integer. The text is supplied as a string literal.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    int count = 3;\n    printf("%s x %d\\n", "pencil", count);\n    return 0;\n}'},
+      {title:'Print a decimal value',goal:'Use %f to display a decimal number. This model uses a fixed demo value.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    double average = 7.5;\n    printf("Average: %.1f\\n", average);\n    return 0;\n}'}
+    ],
+    conditions:[
+      {title:'Check a minimum age',goal:'Change age and watch the program choose one branch.',demo:'condition',code:'#include <stdio.h>\n\nint main(void) {\n    int age = 16;\n    if (age >= 16) {\n        puts("You can apply.");\n    } else {\n        puts("Wait a little longer.");\n    }\n    return 0;\n}'},
+      {title:'Check a positive number',goal:'The else branch runs when the comparison is false.',demo:'condition',code:'#include <stdio.h>\n\nint main(void) {\n    int number = -2;\n    if (number > 0) {\n        puts("Positive");\n    } else {\n        puts("Zero or negative");\n    }\n    return 0;\n}'}
+    ],
+    loops:[
+      {title:'Count down',goal:'A loop can count backwards when its value decreases toward the stopping rule.',demo:'loop',code:'#include <stdio.h>\n\nint main(void) {\n    for (int count = 3; count >= 1; count--) {\n        printf("%d ", count);\n    }\n    return 0;\n}'},
+      {title:'Add a fixed number each round',goal:'The update can use += to move forward by a chosen stride.',demo:'loop',code:'#include <stdio.h>\n\nint main(void) {\n    for (int step = 0; step <= 8; step += 2) {\n        printf("%d ", step);\n    }\n    return 0;\n}'}
+    ],
+    arrays:[
+      {title:'Visit every score',goal:'The index starts at zero and stops before the array length.',demo:'array',code:'#include <stdio.h>\n\nint main(void) {\n    int scores[3] = {6, 9, 7};\n    for (int i = 0; i < 3; i++) {\n        printf("%d ", scores[i]);\n    }\n    return 0;\n}'},
+      {title:'Read an array backwards',goal:'A valid reverse walk begins at the last index and counts down to zero.',demo:'array',code:'#include <stdio.h>\n\nint main(void) {\n    int steps[4] = {2, 4, 6, 8};\n    for (int i = 3; i >= 0; i--) {\n        printf("%d ", steps[i]);\n    }\n    return 0;\n}'}
+    ],
+    functions:[
+      {title:'Add two small values',goal:'Pass values into parameters and use the returned result.',demo:'function',code:'#include <stdio.h>\n\nint add(int left, int right) {\n    return left + right;\n}\n\nint main(void) {\n    int total = add(8, 5);\n    printf("Total: %d\\n", total);\n    return 0;\n}'},
+      {title:'Reuse a calculation',goal:'Call the same function with a different pair of arguments.',demo:'function',code:'#include <stdio.h>\n\nint add(int first, int second) {\n    return first + second;\n}\n\nint main(void) {\n    int score = add(12, 7);\n    printf("Score: %d\\n", score);\n    return 0;\n}'}
+    ],
+    recursion:[
+      {title:'Count down to a base case',goal:'Each call gets smaller until n reaches zero.',demo:'recursion',code:'#include <stdio.h>\n\nvoid countdown(int n) {\n    if (n == 0) {\n        puts("Done");\n        return;\n    }\n    printf("%d ", n);\n    countdown(n - 1);\n}\n\nint main(void) {\n    countdown(4);\n    return 0;\n}'},
+      {title:'Calculate a factorial',goal:'Factorial keeps the smaller recursive problem until it reaches the base case.',demo:'recursion',code:'#include <stdio.h>\n\nint factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n - 1);\n}\n\nint main(void) {\n    printf("%d\\n", factorial(5));\n    return 0;\n}'}
+    ],
+    pointers:[
+      {title:'Read through a pointer',goal:'Use & to save an address and * to read the value stored there.',demo:'pointer',code:'#include <stdio.h>\n\nint main(void) {\n    int points = 25;\n    int *point_ptr = &points;\n    printf("Points: %d\\n", *point_ptr);\n    return 0;\n}'},
+      {title:'Read a value through a pointer',goal:'Dereference the pointer to read the value stored in its target.',demo:'pointer',code:'#include <stdio.h>\n\nint main(void) {\n    int level = 2;\n    int *level_ptr = &level;\n    printf("Level: %d\\n", *level_ptr);\n    return 0;\n}'}
+    ],
+    structs:[
+      {title:'Group student details',goal:'A struct keeps related fields together under one variable name.',demo:'struct',code:'#include <stdio.h>\n\nstruct Student { int age; int level; };\n\nint main(void) {\n    struct Student learner = {15, 3};\n    printf("Age: %d\\n", learner.age);\n    return 0;\n}'},
+      {title:'Read another student age',goal:'Use the dot operator to select a field from a structure value.',demo:'struct',code:'#include <stdio.h>\n\nstruct Student { int age; int level; };\n\nint main(void) {\n    struct Student learner = {12, 1};\n    printf("Age: %d\\n", learner.age);\n    return 0;\n}'}
+    ],
+    memory:[
+      {title:'Request space for three numbers',goal:'Check malloc before using it, then free the block when finished. The browser model displays a fixed teaching message.',demo:'hello',code:'#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n    int *values = malloc(3 * sizeof *values);\n    if (values == NULL) return 1;\n    values[0] = 4;\n    puts("Memory reserved successfully.");\n    free(values);\n    return 0;\n}'},
+      {title:'Use calloc for zeroed memory',goal:'calloc reserves space for several items and initializes their bytes to zero.',demo:'hello',code:'#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n    int *counts = calloc(2, sizeof *counts);\n    if (counts == NULL) return 1;\n    printf("Starting count: %d\\n", counts[0]);\n    free(counts);\n    return 0;\n}'}
+    ],
+    files:[
+      {title:'Write a note',goal:'Open in write mode, check success, write text, and close the file.',demo:'file',code:'#include <stdio.h>\n\nint main(void) {\n    FILE *file = fopen("notes.txt", "w");\n    if (file == NULL) return 1;\n    fprintf(file, "Practice a little every day.\\n");\n    fclose(file);\n    puts("Note written.");\n    return 0;\n}'},
+      {title:'Append a second line',goal:'Append mode adds content to the end of an existing file.',demo:'file',code:'#include <stdio.h>\n\nint main(void) {\n    FILE *file = fopen("notes.txt", "a");\n    if (file == NULL) return 1;\n    fprintf(file, "Keep learning.\\n");\n    fclose(file);\n    puts("Line added.");\n    return 0;\n}'}
+    ],
+    preprocessor:[
+      {title:'Use a named constant',goal:'A macro can give a meaningful name to a value used throughout a program.',demo:'hello',code:'#include <stdio.h>\n#define DAYS_IN_WEEK 7\n\nint main(void) {\n    printf("Days in a week: %d\\n", DAYS_IN_WEEK);\n    return 0;\n}'},
+      {title:'Include the library you use',goal:'stdio.h declares standard input/output tools such as printf.',demo:'hello',code:'#include <stdio.h>\n\nint main(void) {\n    puts("This line uses stdio.");\n    return 0;\n}'}
+    ],
+    errors:[
+      {title:'Trace a running total',goal:'Print the changing total each round to find where a calculation goes off track.',demo:'loop',code:'#include <stdio.h>\n\nint main(void) {\n    int total = 0;\n    for (int i = 1; i <= 4; i++) {\n        total += i;\n        printf("i=%d total=%d\\n", i, total);\n    }\n    return 0;\n}'},
+      {title:'Check a loop boundary',goal:'The loop runs while i is less than 3, so it prints 0, 1, and 2.',demo:'loop',code:'#include <stdio.h>\n\nint main(void) {\n    for (int i = 0; i < 3; i++) {\n        printf("index %d\\n", i);\n    }\n    return 0;\n}'}
+    ],
+    practice:[
+      {title:'Find every array value',goal:'Combine a fixed-size array with a loop that stays within its valid indexes.',demo:'array',code:'#include <stdio.h>\n\nint main(void) {\n    int temperatures[3] = {18, 20, 19};\n    for (int i = 0; i < 3; i++) {\n        printf("%d ", temperatures[i]);\n    }\n    return 0;\n}'},
+      {title:'Practice the array total',goal:'Trace each value as the running total changes. The visual model highlights each array read.',demo:'array',code:'#include <stdio.h>\n\nint main(void) {\n    int points[4] = {2, 3, 4, 1};\n    for (int i = 0; i < 4; i++) {\n        printf("%d ", points[i]);\n    }\n    return 0;\n}'}
+    ]
+  };
+
   const $ = (selector, root=document) => root.querySelector(selector);
   const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
   const storage = {read(key, fallback){try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}},write(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}};
@@ -41,6 +114,7 @@
   let completed = new Set(Array.isArray(savedCompleted) ? savedCompleted.filter(id => validUnitIds.has(id)) : []);
   let activeIndex = Math.max(0, units.findIndex(u => u.id === storage.read('clab-last-unit','overview')));
   let activeDemo = 'hello';
+  let loadedProgram = null;
   let simSteps = [];
   let stepIndex = 0;
   let autoTimer = null;
@@ -83,6 +157,7 @@
     $('#callout-body').textContent = unit.calloutBody;
     $('#syntax-code').textContent = unit.syntax;
     $('#syntax-caption').textContent = unit.syntaxCaption;
+    renderProgramExamples(unit);
     $('#takeaway-text').textContent = unit.takeaway;
     $('#aside-tip').textContent = unit.tip;
     $('#visual-label').textContent = unit.visual;
@@ -161,7 +236,33 @@
 
   function loadDemo(id) {
     activeDemo=id in demos?id:'hello';
+    loadedProgram=null;
     $('#demo-select').value=activeDemo;$('#code-editor').value=demos[activeDemo].code;updateLineNumbers();clearSimulation();
+  }
+
+  function loadProgram(program) {
+    loadedProgram=program;activeDemo=program.demo;
+    $('#demo-select').value=activeDemo;$('#code-editor').value=program.code;
+    updateLineNumbers();clearSimulation();runSimulation();
+    $('#simulator').scrollIntoView({behavior:'smooth',block:'start'});
+    showToastMessage(`Loaded “${program.title}” in the simulator.`);
+  }
+
+  function renderProgramExamples(unit) {
+    const examples=programExamples[unit.id]||[];
+    $('#program-count').textContent=`${examples.length} examples`;
+    const list=$('#program-examples');list.replaceChildren();
+    examples.forEach((program,index)=>{
+      const card=document.createElement('article');card.className='program-card';
+      const heading=document.createElement('div');heading.className='program-card-heading';
+      const title=document.createElement('h5');title.textContent=`${String(index+1).padStart(2,'0')} · ${program.title}`;
+      const load=document.createElement('button');load.type='button';load.className='program-load';load.textContent='Load & run ↗';
+      load.addEventListener('click',()=>loadProgram(program));
+      heading.append(title,load);
+      const goal=document.createElement('p');goal.textContent=program.goal;
+      const code=document.createElement('pre');const codeText=document.createElement('code');codeText.textContent=program.code;code.append(codeText);
+      card.append(heading,goal,code);list.append(card);
+    });
   }
 
   function updateLineNumbers() {
@@ -183,6 +284,21 @@
     function mul(){let v=atom();while(['*','/','%'].includes(tokens[pos])){const op=tokens[pos++],r=atom();v=op==='*'?v*r:op==='/'?v/r:v%r}return v}
     function addSub(){let v=mul();while(tokens[pos]==='+'||tokens[pos]==='-'){const op=tokens[pos++],r=mul();v=op==='+'?v+r:v-r}return v}
     try{return addSub()}catch{return 0}
+  }
+
+  function runSimpleBlock(block,vars) {
+    let output='';
+    for(const line of block.split('\n')) {
+      const statement=line.trim();
+      if(!statement||statement.startsWith('//'))continue;
+      const assignment=statement.match(/^(\w+)\s*(\+=|-=|=)\s*([^;]+);/);
+      if(assignment) {
+        const [,name,operator,expression]=assignment,value=parseNumberExpression(expression,vars);
+        vars[name]=operator==='+='?Number(vars[name]||0)+value:operator==='-='?Number(vars[name]||0)-value:value;
+      }
+      if(/\b(?:printf|puts)\s*\(/.test(statement))output+=sourceOutput(statement,vars);
+    }
+    return output;
   }
 
   function formatC(format,args,vars) {
@@ -251,15 +367,25 @@
       return {steps,output:'This visual model supports one simple loop or one simple condition at a time.\n'};
     }
     if(kind==='hello'||(!/\b(for|while|if|struct|fopen|\*\s*\w+\s*=\s*&|factorial|countdown|\w+\s*\([^;]*\)\s*;)/.test(source)&&/printf|puts/.test(source))){
-      const vars={};for(let i=0;i<lines.length;i++){if(/printf|puts/.test(lines[i])){output+=sourceOutput(lines[i],vars);pushLine(i+1,'Print a message to the screen.',vars,'variables')}else if(/\breturn\b/.test(lines[i]))pushLine(i+1,'Return from main. The program is finished.',vars,'variables')}
+      const vars={};
+      const declaration=/\b(?:int|double|float)\s+(\w+)\s*=\s*([^;]+)\s*;/g;let declared;
+      while((declared=declaration.exec(source)))vars[declared[1]]=parseNumberExpression(declared[2],vars);
+      const macros=/^\s*#define\s+(\w+)\s+(-?\d+(?:\.\d+)?)\s*$/gm;let macro;
+      while((macro=macros.exec(source)))vars[macro[1]]=Number(macro[2]);
+      for(let i=0;i<lines.length;i++){if(/printf|puts/.test(lines[i])){output+=sourceOutput(lines[i],vars);pushLine(i+1,'Print a message to the screen.',vars,'variables')}else if(/\breturn\b/.test(lines[i]))pushLine(i+1,'Return from main. The program is finished.',vars,'variables')}
       if(!steps.length)pushLine(1,'The program is ready. Add a printf or puts statement to see output.');return {steps,output};
     }
     if(kind==='file'||/\bfopen\s*\(/.test(source)){
+      const opened=(source.match(/fopen\s*\(\s*"([^"]+)"\s*,\s*"([rwa])"\s*\)/)||[]);
+      const fileName=opened[1]||'notes.txt',mode=opened[2]||'w';
       const text=(source.match(/fprintf\s*\([^,]+,\s*"((?:\\.|[^"\\])*)"/)||[])[1]||'Keep practicing!\\n';
-      steps.push(makeStep('Open notes.txt in write mode. The simulator uses a virtual file.',{file:'notes.txt',mode:'w'},'file',{contents:''}));
-      steps.push(makeStep('Write text into the virtual file.',{file:'notes.txt',mode:'w'},'file',{contents:text.replace(/\\n/g,'')}));
-      steps.push(makeStep('Close the file so the operation is complete.',{file:'notes.txt',mode:'closed'},'file',{contents:text.replace(/\\n/g,'')}));
-      output=`File saved and closed.\n[virtual notes.txt] ${text.replace(/\\n/g,'')}`;return {steps,output};
+      const contents=text.replace(/\\n/g,'');
+      const modeLabel=mode==='a'?'append':mode==='r'?'read':'write';
+      steps.push(makeStep(`Open ${fileName} in ${modeLabel} mode. The simulator represents the file in memory.`,{file:fileName,mode},'file',{contents:''}));
+      if(mode!=='r')steps.push(makeStep('Write text into the virtual file.',{file:fileName,mode},'file',{contents}));
+      steps.push(makeStep('Close the file so the operation is complete.',{file:fileName,mode:'closed'},'file',{contents}));
+      const printed=sourceOutput(source,{});
+      output=`${printed}[virtual ${fileName}${mode==='a'?'; append mode, prior runs are not retained':''}] ${contents}`;return {steps,output};
     }
     if(kind==='recursion'||/\b(countdown|factorial)\s*\(/.test(source)){
       const n=Number((source.match(/(?:countdown|factorial)\s*\(\s*(-?\d+)\s*\)\s*;/)||source.match(/printf[^;]*,\s*(?:countdown|factorial)\s*\(\s*(-?\d+)\s*\)/)||[])[1]||3);
@@ -286,7 +412,8 @@
     if(kind==='function'||/\badd\s*\(/.test(source)){
       const call=(source.match(/add\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/)||[]);const a=Number(call[1]||4),b=Number(call[2]||3),answer=a+b;
       steps.push(makeStep(`Call add(${a}, ${b}) from main.`,{a,b},'function',{a,b,answer,phase:'call'}));steps.push(makeStep(`Inside add, calculate ${a} + ${b} and return ${answer}.`,{a,b,answer},'function',{a,b,answer,phase:'work'}));steps.push(makeStep(`Back in main, store the returned value in answer.`,{answer},'variables'));
-      output=sourceOutput(source,{answer})||`${answer}\n`;return {steps,output};
+      const resultName=(source.match(/\bint\s+(\w+)\s*=\s*add\s*\(/)||[])[1]||'answer';
+      output=sourceOutput(source,{answer,[resultName]:answer})||`${answer}\n`;return {steps,output};
     }
     if(kind==='array'||/\w+\s*\[\s*\d+\s*\]\s*=\s*\{/.test(source)){
       const arrayMatch=source.match(/(?:int|char)\s+(\w+)\s*\[\s*\d*\s*\]\s*=\s*\{([^}]+)\}/);const name=arrayMatch?.[1]||'scores';const values=(arrayMatch?.[2]||'3, 5, 8, 2').split(',').map(x=>Number(x.trim())||0);
@@ -314,7 +441,7 @@
       const variable=loop[1],op=loop[3],bound=Number(loop[4]),delta=parseLoopDelta(loop[5],variable),start=Number(loop[2]),at=source.indexOf(loop[0]),block=extractBlock(source,at+loop[0].length),line=lines.findIndex(l=>l.includes(loop[0]))+1;
       if(delta===null||delta===0){pushLine(line,'This loop update is outside the simulator’s supported patterns.',{[variable]:start});return {steps,output:'Loop pattern not supported by this visual simulator.\n'}}
       let value=start,round=0;const maxRounds=30;
-      while(round<maxRounds&&loopCondition(value,op,bound)){vars[variable]=value;output+=sourceOutput(block.body,vars);pushLine(line,`Loop round ${round+1}: ${variable} is ${value}.`,vars,'variables');value+=delta;round++}
+      while(round<maxRounds&&loopCondition(value,op,bound)){vars[variable]=value;output+=runSimpleBlock(block.body,vars);pushLine(line,`Loop round ${round+1}: ${variable} is ${value}.`,vars,'variables');value+=delta;round++}
       if(loopCondition(value,op,bound)){pushLine(line,`Paused after ${maxRounds} rounds; the loop condition is still true at ${variable} = ${value}.`,{...vars,[variable]:value});output+=`\n[Simulation paused after ${maxRounds} rounds.]\n`}
       else pushLine(line,`The loop condition is false at ${variable} = ${value}; continue after the loop.`,{...vars,[variable]:value});
       return {steps,output};
@@ -324,7 +451,7 @@
       const variable=whileLoop[1],op=whileLoop[2],bound=Number(whileLoop[3]),at=source.indexOf(whileLoop[0]),block=extractBlock(source,at+whileLoop[0].length),line=lines.findIndex(l=>l.includes(whileLoop[0]))+1;
       let value=Number(vars[variable]||0),round=0;const maxRounds=30;
       const condition=v=>op==='=='?v===bound:op==='!='?v!==bound:loopCondition(v,op,bound);
-      while(round<maxRounds&&condition(value)){vars[variable]=value;output+=sourceOutput(block.body,vars);pushLine(line,`While-loop round ${round+1}: ${variable} is ${value}.`,vars,'variables');const next=applyLoopUpdate(block.body,variable,value);if(next===null){round++;value=Number.NaN;break}value=next;round++}
+      while(round<maxRounds&&condition(value)){vars[variable]=value;output+=runSimpleBlock(block.body,vars);pushLine(line,`While-loop round ${round+1}: ${variable} is ${value}.`,vars,'variables');const next=applyLoopUpdate(block.body,variable,value);if(next===null){round++;value=Number.NaN;break}value=next;round++}
       if(Number.isNaN(value)||condition(value)){pushLine(line,`Stopped safely after ${round} rounds; the loop did not reach a false condition.`,{...vars,[variable]:String(value)});output+=`\n[Simulation stopped safely after ${round} rounds.]\n`}
       else pushLine(line,`The while condition is false at ${variable} = ${value}.`,{...vars,[variable]:value});
       return {steps,output};
@@ -369,7 +496,7 @@
     renderNav();renderUnit(activeIndex);for(const [id,demo] of Object.entries(demos))$('#demo-select').insertAdjacentHTML('beforeend',`<option value="${id}">${demo.label}</option>`);loadDemo(units[activeIndex].demo);
     $('#unit-search').addEventListener('input',event=>renderNav(event.target.value));$('#prev-unit').addEventListener('click',()=>selectUnit(activeIndex-1,true));$('#next-unit').addEventListener('click',()=>selectUnit(activeIndex+1,true));$('#continue-learning').addEventListener('click',()=>selectUnit(activeIndex,true));$('#review-lesson').addEventListener('click',()=>$('#lesson').scrollIntoView({behavior:'smooth'}));$('#visual-play').addEventListener('click',playVisual);$('#complete-unit').addEventListener('click',()=>setCompleted(units[activeIndex].id,!completed.has(units[activeIndex].id)));
     $('#copy-code').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(units[activeIndex].syntax);showToastMessage('Example copied.')}catch{showToastMessage('Clipboard access is unavailable in this browser.')}});
-    $('#demo-select').addEventListener('change',event=>loadDemo(event.target.value));$('#reset-code').addEventListener('click',()=>loadDemo(activeDemo));$('#load-current-example').addEventListener('click',()=>{loadDemo(units[activeIndex].demo);$('#simulator').scrollIntoView({behavior:'smooth'});showToastMessage('Loaded this unit’s example.')});$('#code-editor').addEventListener('input',updateLineNumbers);$('#code-editor').addEventListener('scroll',()=>{$('#line-numbers').scrollTop=$('#code-editor').scrollTop});$('#code-editor').addEventListener('keydown',event=>{if(event.key==='Tab'){event.preventDefault();const start=event.target.selectionStart,end=event.target.selectionEnd;event.target.setRangeText('    ',start,end,'end');updateLineNumbers()}if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();runSimulation()}});$('#run-sim').addEventListener('click',runSimulation);$('#step-back').addEventListener('click',()=>{if(stepIndex>0){stepIndex--;renderStep()}});$('#step-next').addEventListener('click',()=>{if(stepIndex<simSteps.length-1){stepIndex++;renderStep()}});$('#auto-play').addEventListener('click',toggleAuto);
+    $('#demo-select').addEventListener('change',event=>loadDemo(event.target.value));$('#reset-code').addEventListener('click',()=>{if(loadedProgram){$('#code-editor').value=loadedProgram.code;updateLineNumbers();clearSimulation()}else loadDemo(activeDemo)});$('#load-current-example').addEventListener('click',()=>{const examples=programExamples[units[activeIndex].id]||[];if(examples.length){loadProgram(examples[0]);return}loadDemo(units[activeIndex].demo);$('#simulator').scrollIntoView({behavior:'smooth'});showToastMessage('Loaded this unit’s example.')});$('#code-editor').addEventListener('input',updateLineNumbers);$('#code-editor').addEventListener('scroll',()=>{$('#line-numbers').scrollTop=$('#code-editor').scrollTop});$('#code-editor').addEventListener('keydown',event=>{if(event.key==='Tab'){event.preventDefault();const start=event.target.selectionStart,end=event.target.selectionEnd;event.target.setRangeText('    ',start,end,'end');updateLineNumbers()}if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();runSimulation()}});$('#run-sim').addEventListener('click',runSimulation);$('#step-back').addEventListener('click',()=>{if(stepIndex>0){stepIndex--;renderStep()}});$('#step-next').addEventListener('click',()=>{if(stepIndex<simSteps.length-1){stepIndex++;renderStep()}});$('#auto-play').addEventListener('click',toggleAuto);
     $('#reset-progress').addEventListener('click',()=>{completed.clear();storage.write('clab-completed',[]);renderUnit(activeIndex);showToastMessage('Learning progress reset.')});$('#font-toggle').addEventListener('click',()=>{document.body.classList.toggle('large-text');storage.write('clab-large-text',document.body.classList.contains('large-text'))});if(storage.read('clab-large-text',false)===true)document.body.classList.add('large-text');$('#menu-toggle').addEventListener('click',()=>setSidebarOpen(!$('#sidebar').classList.contains('open')));
     document.addEventListener('keydown',event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();$('#unit-search').focus()}if(event.key==='Escape')setSidebarOpen(false)});
   }
