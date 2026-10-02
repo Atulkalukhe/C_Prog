@@ -36,13 +36,16 @@
   const $ = (selector, root=document) => root.querySelector(selector);
   const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
   const storage = {read(key, fallback){try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}},write(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}};
-  let completed = new Set(storage.read('clab-completed', []));
+  const validUnitIds = new Set(units.map(unit => unit.id));
+  const savedCompleted = storage.read('clab-completed', []);
+  let completed = new Set(Array.isArray(savedCompleted) ? savedCompleted.filter(id => validUnitIds.has(id)) : []);
   let activeIndex = Math.max(0, units.findIndex(u => u.id === storage.read('clab-last-unit','overview')));
   let activeDemo = 'hello';
   let simSteps = [];
   let stepIndex = 0;
   let autoTimer = null;
   let toastTimer = null;
+  let visualTimer = null;
   let visualFrame = 0;
   const navGroups = ['FOUNDATIONS','MAKE DECISIONS','DATA & MEMORY','BEYOND THE BASICS'];
 
@@ -124,10 +127,20 @@
 
   function selectUnit(index,scroll=false) {
     renderUnit(index,scroll);
-    if(window.innerWidth<=820)$('#sidebar').classList.remove('open');
+    if(window.innerWidth<=820)setSidebarOpen(false);
+  }
+
+  function setSidebarOpen(open) {
+    const sidebar=$('#sidebar'),button=$('#menu-toggle');
+    sidebar.classList.toggle('open',open);
+    button.setAttribute('aria-expanded',String(open));
+    button.setAttribute('aria-label',open?'Close course navigation':'Open course navigation');
+    button.textContent=open?'×':'☰';
   }
 
   function renderVisual(unit) {
+    clearTimeout(visualTimer);
+    $('#visual-play').innerHTML='<span>▶</span> Play the visual';
     const stage=$('#visual-stage');stage.className='visual-stage';visualFrame=0;
     const first={flow:`<div class="flow-node">source code</div><span class="flow-arrow">→</span><div class="flow-node highlight">compiler</div><span class="flow-arrow">→</span><div class="flow-node">program</div>`,branch:`<div class="flow-node highlight">score ≥ 50?</div><span class="flow-arrow">↙ &nbsp; ↘</span><div class="flow-node">Pass</div><div class="flow-node">Practice</div>`,loop:`<div class="flow-node">start</div><span class="flow-arrow">→</span><div class="flow-node highlight">check rule</div><span class="flow-arrow">→</span><div class="flow-node">do work ↺</div>`,variable:`<div class="memory-stack"><div class="memory-cell">lives = 3<small>int · named box</small></div><span class="flow-arrow">→</span><div class="memory-cell">lives = 4<small>after update</small></div></div>`,array:`<div class="array-cell">3<small>index 0</small></div><div class="array-cell">5<small>index 1</small></div><div class="array-cell">8<small>index 2</small></div><div class="array-cell">2<small>index 3</small></div>`,function:`<div class="flow-node">main()</div><span class="flow-arrow">→</span><div class="flow-node highlight">add(4, 3)</div><span class="flow-arrow">↩</span><div class="flow-node">answer = 7</div>`,recursion:`<div class="call-stack"><span>f(3)</span><span>f(2)</span><span>f(1)</span><span class="returning">base</span></div>`,pointer:`<div class="memory-stack"><div class="memory-cell">score<small>address 0x100</small></div><span class="memory-pointer">← *ptr</span><div class="memory-cell">ptr = 0x100<small>holds address</small></div></div>`,struct:`<div class="struct-fields"><span>name</span><span>"Mina"</span><span>age</span><span>14</span><span>level</span><span>2</span></div>`,file:`<div class="file-demo"><div class="flow-node">program</div><span class="flow-arrow">→</span><div class="file-icon">▤</div><div class="file-lines"><small>notes.txt</small><i></i><i></i><i></i></div></div>`};
     stage.innerHTML=first[unit.visualType]||first.flow;
@@ -136,9 +149,10 @@
   }
 
   function playVisual() {
+    clearTimeout(visualTimer);
     const stage=$('#visual-stage');stage.classList.remove('is-playing');void stage.offsetWidth;stage.classList.add('is-playing');
     const button=$('#visual-play');button.innerHTML='<span>✓</span> Played';
-    setTimeout(()=>{stage.classList.remove('is-playing');button.innerHTML='<span>▶</span> Play the visual'},1500);
+    visualTimer=setTimeout(()=>{stage.classList.remove('is-playing');button.innerHTML='<span>▶</span> Play the visual';visualTimer=null},1500);
   }
 
   function showToastMessage(message) {
@@ -184,9 +198,58 @@
     return chunks.join('');
   }
 
+  function extractBlock(source,fromIndex) {
+    const open=source.indexOf('{',fromIndex);
+    if(open<0)return {body:'',close:-1};
+    let depth=1,quote=null,escaped=false,lineComment=false,blockComment=false;
+    for(let i=open+1;i<source.length;i++){
+      const ch=source[i],next=source[i+1];
+      if(lineComment){if(ch==='\n')lineComment=false;continue}
+      if(blockComment){if(ch==='*'&&next==='/'){blockComment=false;i++}continue}
+      if(quote){if(escaped)escaped=false;else if(ch==='\\')escaped=true;else if(ch===quote)quote=null;continue}
+      if(ch==='/'&&next==='/'){lineComment=true;i++;continue}
+      if(ch==='/'&&next==='*'){blockComment=true;i++;continue}
+      if(ch==='"'||ch==="'"){quote=ch;continue}
+      if(ch==='{')depth++;
+      if(ch==='}'&&--depth===0)return {body:source.slice(open+1,i),close:i};
+    }
+    return {body:source.slice(open+1),close:-1};
+  }
+
+  function loopCondition(value,operator,bound) {
+    return operator==='<'?value<bound:operator==='<='?value<=bound:operator==='>'?value>bound:value>=bound;
+  }
+
+  function parseLoopDelta(update,variable) {
+    const value=update.replace(/\s+/g,'');
+    if(value===`${variable}++`||value===`++${variable}`)return 1;
+    if(value===`${variable}--`||value===`--${variable}`)return -1;
+    let match=value.match(new RegExp(`^${variable}([+-])=(\\d+)$`));
+    if(match)return (match[1]==='+'?1:-1)*Number(match[2]);
+    match=value.match(new RegExp(`^${variable}=${variable}([+-])(\\d+)$`));
+    if(match)return (match[1]==='+'?1:-1)*Number(match[2]);
+    return null;
+  }
+
+  function applyLoopUpdate(body,variable,value) {
+    const expression=new RegExp(`(?:\\b${variable}\\s*(\\+\\+|--|\\+=\\s*-?\\d+|-=\\s*-?\\d+)|\\b${variable}\\s*=\\s*${variable}\\s*[+-]\\s*-?\\d+)`);
+    const update=body.match(expression)?.[0];
+    if(!update)return null;
+    if(update.includes('++'))return value+1;
+    if(update.includes('--'))return value-1;
+    const delta=parseLoopDelta(update,variable);
+    return delta===null?null:value+delta;
+  }
+
   function inferSimulation(source,kind) {
     const lines=source.split('\n'),steps=[];let output='';
     const pushLine=(line,description,vars={},type='variables',extra={})=>steps.push(makeStep(description,{line,...vars},type,extra));
+    const loopCount=(source.match(/\b(?:for|while)\s*\(/g)||[]).length;
+    const conditionCount=(source.match(/\bif\s*\(/g)||[]).length;
+    if(/\bdo\s*\{/.test(source)||loopCount>1||(loopCount&&conditionCount)||conditionCount>1){
+      steps.push(makeStep('This program combines control-flow patterns that this visual model does not execute together.'));
+      return {steps,output:'This visual model supports one simple loop or one simple condition at a time.\n'};
+    }
     if(kind==='hello'||(!/\b(for|while|if|struct|fopen|\*\s*\w+\s*=\s*&|factorial|countdown|\w+\s*\([^;]*\)\s*;)/.test(source)&&/printf|puts/.test(source))){
       const vars={};for(let i=0;i<lines.length;i++){if(/printf|puts/.test(lines[i])){output+=sourceOutput(lines[i],vars);pushLine(i+1,'Print a message to the screen.',vars,'variables')}else if(/\breturn\b/.test(lines[i]))pushLine(i+1,'Return from main. The program is finished.',vars,'variables')}
       if(!steps.length)pushLine(1,'The program is ready. Add a printf or puts statement to see output.');return {steps,output};
@@ -199,11 +262,14 @@
       output=`File saved and closed.\n[virtual notes.txt] ${text.replace(/\\n/g,'')}`;return {steps,output};
     }
     if(kind==='recursion'||/\b(countdown|factorial)\s*\(/.test(source)){
-      const n=Number((source.match(/(?:countdown|factorial)\s*\(\s*(\d+)\s*\)\s*;/)||source.match(/printf[^;]*,\s*(?:countdown|factorial)\s*\(\s*(\d+)\s*\)/)||[])[1]||3);
-      const isFactorial=/factorial/.test(source);const limit=Math.min(n,8);const stack=Array.from({length:limit+1},(_,i)=>isFactorial?`fact(${limit-i})`:`count(${limit-i})`);
+      const n=Number((source.match(/(?:countdown|factorial)\s*\(\s*(-?\d+)\s*\)\s*;/)||source.match(/printf[^;]*,\s*(?:countdown|factorial)\s*\(\s*(-?\d+)\s*\)/)||[])[1]||3);
+      const isFactorial=/factorial/.test(source);
+      if(n<0){steps.push(makeStep('A negative input does not reach this example’s base case, so simulation stops safely.',{n}));return {steps,output:'Cannot safely simulate this recursive input.\n'}}
+      const limit=Math.min(n,8);const stack=Array.from({length:limit+1},(_,i)=>isFactorial?`fact(${limit-i})`:`count(${limit-i})`);
       for(let i=0;i<=limit;i++)steps.push(makeStep(i===limit?'Base case: stop making new calls.':`Call the function with ${limit-i}; it asks for a smaller problem.`,{},'recursion',{stack:stack.slice(0,i+1)}));
       for(let i=limit-1;i>=0;i--)steps.push(makeStep(`Return from ${isFactorial?'factorial':'countdown'}(${limit-i-1}) to its caller.`,{},'recursion',{stack:stack.slice(0,i+1),returning:true}));
       output=isFactorial?`${Array.from({length:limit},(_,i)=>i+1).reduce((a,b)=>a*b,1)}\n`:`${Array.from({length:limit},(_,i)=>limit-i).join(' ')} Go!\n`;
+      if(n>limit)output+=`[Visualized the first ${limit} calls of ${n}.]\n`;
       if(!/factorial|countdown/.test(source)){steps.push(makeStep('Run the statements in main.',{},'variables'));output=sourceOutput(source,{})||'Program finished.\n'}return {steps,output};
     }
     if(kind==='pointer'||/\*\s*\w+\s*=\s*&/.test(source)){
@@ -224,14 +290,56 @@
     }
     if(kind==='array'||/\w+\s*\[\s*\d+\s*\]\s*=\s*\{/.test(source)){
       const arrayMatch=source.match(/(?:int|char)\s+(\w+)\s*\[\s*\d*\s*\]\s*=\s*\{([^}]+)\}/);const name=arrayMatch?.[1]||'scores';const values=(arrayMatch?.[2]||'3, 5, 8, 2').split(',').map(x=>Number(x.trim())||0);
-      const loop=source.match(/for\s*\(\s*(?:int\s+)?(\w+)\s*=\s*(\d+)\s*;\s*\w+\s*<\s*(\d+)/);const limit=Math.min(Number(loop?.[3]||values.length),values.length);
-      for(let i=0;i<limit;i++)steps.push(makeStep(`Read ${name}[${i}] — the value at index ${i}.`,{i,value:values[i]},'array',{values,index:i,name}));
-      output=values.slice(0,limit).join(' ')+'\n';return {steps,output};
+      const loop=source.match(/for\s*\(\s*(?:int\s+)?(\w+)\s*=\s*(-?\d+)\s*;\s*\1\s*(<|<=|>|>=)\s*(-?\d+)\s*;\s*([^)]*)\)/);
+      if(/\bfor\b/.test(source)&&!loop){steps.push(makeStep('This array loop pattern is outside the simulator’s supported forms.'));return {steps,output:'Array loop pattern not supported by this visual simulator.\n'}}
+      if(loop){
+        const variable=loop[1],op=loop[3],bound=Number(loop[4]),delta=parseLoopDelta(loop[5],variable),at=source.indexOf(loop[0]),block=extractBlock(source,at+loop[0].length),line=lines.findIndex(l=>l.includes(loop[0]))+1;
+        if(delta===null||delta===0){pushLine(line,'This array-loop update is outside the simulator’s supported patterns.');return {steps,output:'Array loop pattern not supported by this visual simulator.\n'}}
+        let index=Number(loop[2]),round=0;const maxRounds=30;
+        while(round<maxRounds&&loopCondition(index,op,bound)){
+          if(index<0||index>=values.length){steps.push(makeStep(`${name}[${index}] is outside the array’s valid indexes 0–${values.length-1}.`,{i:index},'array',{values,index:-1,name}));output+=`[Stopped before an out-of-range array access at index ${index}.]\n`;return {steps,output}}
+          steps.push(makeStep(`Read ${name}[${index}] — the value at index ${index}.`,{i:index,value:values[index]},'array',{values,index,name}));
+          output+=`${values[index]} `;index+=delta;round++;
+        }
+        if(loopCondition(index,op,bound)){steps.push(makeStep(`Paused after ${maxRounds} array steps; the loop condition is still true at ${variable} = ${index}.`,{i:index},'array',{values,index:-1,name}));output+=`\n[Simulation paused after ${maxRounds} rounds.]\n`}
+        else steps.push(makeStep(`The array-loop condition is false at ${variable} = ${index}.`,{i:index},'array',{values,index:-1,name}));
+        return {steps,output};
+      }
+      for(let i=0;i<values.length;i++)steps.push(makeStep(`Read ${name}[${i}] — the value at index ${i}.`,{i,value:values[i]},'array',{values,index:i,name}));
+      output=values.join(' ')+'\n';return {steps,output};
     }
     const declaration=/\b(?:int|double|float|char)\s+(\w+)\s*=\s*(-?\d+(?:\.\d+)?)\s*;/g;let decl;const vars={};while((decl=declaration.exec(source)))vars[decl[1]]=Number(decl[2]);
-    const loop=source.match(/for\s*\(\s*(?:int\s+)?(\w+)\s*=\s*(-?\d+)\s*;\s*\1\s*(<|<=|>|>=)\s*(-?\d+)\s*;\s*(?:\1\+\+|\+\+\1|\1\s*=\s*\1\s*\+\s*(\d+))\s*\)/);
-    if(loop){const variable=loop[1],start=Number(loop[2]),op=loop[3],end=Number(loop[4]),increment=Number(loop[5]||1);let v=start,round=0;while(round<12&&((op==='<'&&v<end)||(op==='<='&&v<=end)||(op==='>'&&v>end)||(op==='>='&&v>=end))){vars[variable]=v;const body=source.slice(source.indexOf('{',source.indexOf(loop[0]))+1,source.indexOf('}',source.indexOf(loop[0])));output+=sourceOutput(body,vars);pushLine(lines.findIndex(l=>l.includes(loop[0]))+1,`Loop round ${round+1}: ${variable} is ${v}.`,vars,'variables');v+=increment;round++}pushLine(lines.findIndex(l=>l.includes(loop[0]))+1,`The loop condition is false at ${variable} = ${v}; continue after the loop.`,{...vars,[variable]:v});return {steps,output};}
-    if(/\bif\s*\(/.test(source)){const condition=source.match(/if\s*\(\s*(\w+)\s*(>=|<=|==|!=|>|<)\s*(-?\d+)\s*\)/);if(condition){const [,name,op,rhs]=condition,lhs=Number(vars[name]||0),right=Number(rhs);const truth=op==='>='?lhs>=right:op==='<='?lhs<=right:op==='=='?lhs===right:op==='!='?lhs!==right:op==='>'?lhs>right:lhs<right;const open=source.indexOf('{',source.indexOf(condition[0])),close=source.indexOf('}',open);const elseAt=source.indexOf('else',close);const elseOpen=elseAt>=0?source.indexOf('{',elseAt):-1,elseClose=elseOpen>=0?source.indexOf('}',elseOpen):-1;const chosen=truth?source.slice(open+1,close):elseOpen>=0?source.slice(elseOpen+1,elseClose):'';output=sourceOutput(chosen,vars);steps.push(makeStep(`Check ${name} ${op} ${right}: ${truth?'true':'false'}.`,vars,'variables'));steps.push(makeStep(`Follow the ${truth?'if':'else'} path and run its statement.`,vars,'variables'));return {steps,output};}}
+    const loop=source.match(/for\s*\(\s*(?:int\s+)?(\w+)\s*=\s*(-?\d+)\s*;\s*\1\s*(<|<=|>|>=)\s*(-?\d+)\s*;\s*([^)]*)\)/);
+    if(loop){
+      const variable=loop[1],op=loop[3],bound=Number(loop[4]),delta=parseLoopDelta(loop[5],variable),start=Number(loop[2]),at=source.indexOf(loop[0]),block=extractBlock(source,at+loop[0].length),line=lines.findIndex(l=>l.includes(loop[0]))+1;
+      if(delta===null||delta===0){pushLine(line,'This loop update is outside the simulator’s supported patterns.',{[variable]:start});return {steps,output:'Loop pattern not supported by this visual simulator.\n'}}
+      let value=start,round=0;const maxRounds=30;
+      while(round<maxRounds&&loopCondition(value,op,bound)){vars[variable]=value;output+=sourceOutput(block.body,vars);pushLine(line,`Loop round ${round+1}: ${variable} is ${value}.`,vars,'variables');value+=delta;round++}
+      if(loopCondition(value,op,bound)){pushLine(line,`Paused after ${maxRounds} rounds; the loop condition is still true at ${variable} = ${value}.`,{...vars,[variable]:value});output+=`\n[Simulation paused after ${maxRounds} rounds.]\n`}
+      else pushLine(line,`The loop condition is false at ${variable} = ${value}; continue after the loop.`,{...vars,[variable]:value});
+      return {steps,output};
+    }
+    const whileLoop=source.match(/while\s*\(\s*(\w+)\s*(<=|<|>=|>|==|!=)\s*(-?\d+)\s*\)/);
+    if(whileLoop){
+      const variable=whileLoop[1],op=whileLoop[2],bound=Number(whileLoop[3]),at=source.indexOf(whileLoop[0]),block=extractBlock(source,at+whileLoop[0].length),line=lines.findIndex(l=>l.includes(whileLoop[0]))+1;
+      let value=Number(vars[variable]||0),round=0;const maxRounds=30;
+      const condition=v=>op==='=='?v===bound:op==='!='?v!==bound:loopCondition(v,op,bound);
+      while(round<maxRounds&&condition(value)){vars[variable]=value;output+=sourceOutput(block.body,vars);pushLine(line,`While-loop round ${round+1}: ${variable} is ${value}.`,vars,'variables');const next=applyLoopUpdate(block.body,variable,value);if(next===null){round++;value=Number.NaN;break}value=next;round++}
+      if(Number.isNaN(value)||condition(value)){pushLine(line,`Stopped safely after ${round} rounds; the loop did not reach a false condition.`,{...vars,[variable]:String(value)});output+=`\n[Simulation stopped safely after ${round} rounds.]\n`}
+      else pushLine(line,`The while condition is false at ${variable} = ${value}.`,{...vars,[variable]:value});
+      return {steps,output};
+    }
+    if(/\bif\s*\(/.test(source)){
+      const condition=source.match(/if\s*\(\s*(\w+)\s*(>=|<=|==|!=|>|<)\s*(-?\d+)\s*\)/);
+      if(!condition){steps.push(makeStep('This condition form is outside the simulator’s supported patterns.'));return {steps,output:'Condition pattern not supported by this visual simulator.\n'}}
+      const [,name,op,rhs]=condition,lhs=Number(vars[name]||0),right=Number(rhs);
+      const truth=op==='>='?lhs>=right:op==='<='?lhs<=right:op==='=='?lhs===right:op==='!='?lhs!==right:op==='>'?lhs>right:lhs<right;
+      const ifBlock=extractBlock(source,source.indexOf(condition[0])+condition[0].length),elseAt=source.indexOf('else',ifBlock.close),elseBlock=elseAt>=0?extractBlock(source,elseAt+4):{body:'',close:-1};
+      output=sourceOutput(truth?ifBlock.body:elseBlock.body,vars);
+      steps.push(makeStep(`Check ${name} ${op} ${right}: ${truth?'true':'false'}.`,vars,'variables'));
+      steps.push(makeStep(`Follow the ${truth?'if':'else'} path and run its statement.`,vars,'variables'));
+      return {steps,output};
+    }
     for(let i=0;i<lines.length;i++){const line=lines[i];const assignment=line.match(/\b(\w+)\s*=\s*([^;]+);/);if(assignment&&!/==|>=|<=/.test(assignment[0]))vars[assignment[1]]=parseNumberExpression(assignment[2],vars);if(/printf|puts/.test(line))output+=sourceOutput(line,vars);if(line.trim()&&!line.trim().startsWith('#')&&!line.trim().startsWith('//')&&!/[{}]/.test(line.trim()))pushLine(i+1,'Step through this statement.',vars,'variables');}
     if(!steps.length)pushLine(1,'Edit the example or choose a demo, then run again.');return {steps,output:output||'Program finished. No printable output.\n'};
   }
@@ -262,8 +370,8 @@
     $('#unit-search').addEventListener('input',event=>renderNav(event.target.value));$('#prev-unit').addEventListener('click',()=>selectUnit(activeIndex-1,true));$('#next-unit').addEventListener('click',()=>selectUnit(activeIndex+1,true));$('#continue-learning').addEventListener('click',()=>selectUnit(activeIndex,true));$('#review-lesson').addEventListener('click',()=>$('#lesson').scrollIntoView({behavior:'smooth'}));$('#visual-play').addEventListener('click',playVisual);$('#complete-unit').addEventListener('click',()=>setCompleted(units[activeIndex].id,!completed.has(units[activeIndex].id)));
     $('#copy-code').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(units[activeIndex].syntax);showToastMessage('Example copied.')}catch{showToastMessage('Clipboard access is unavailable in this browser.')}});
     $('#demo-select').addEventListener('change',event=>loadDemo(event.target.value));$('#reset-code').addEventListener('click',()=>loadDemo(activeDemo));$('#load-current-example').addEventListener('click',()=>{loadDemo(units[activeIndex].demo);$('#simulator').scrollIntoView({behavior:'smooth'});showToastMessage('Loaded this unit’s example.')});$('#code-editor').addEventListener('input',updateLineNumbers);$('#code-editor').addEventListener('scroll',()=>{$('#line-numbers').scrollTop=$('#code-editor').scrollTop});$('#code-editor').addEventListener('keydown',event=>{if(event.key==='Tab'){event.preventDefault();const start=event.target.selectionStart,end=event.target.selectionEnd;event.target.setRangeText('    ',start,end,'end');updateLineNumbers()}if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();runSimulation()}});$('#run-sim').addEventListener('click',runSimulation);$('#step-back').addEventListener('click',()=>{if(stepIndex>0){stepIndex--;renderStep()}});$('#step-next').addEventListener('click',()=>{if(stepIndex<simSteps.length-1){stepIndex++;renderStep()}});$('#auto-play').addEventListener('click',toggleAuto);
-    $('#reset-progress').addEventListener('click',()=>{completed.clear();storage.write('clab-completed',[]);renderUnit(activeIndex);showToastMessage('Learning progress reset.')});$('#font-toggle').addEventListener('click',()=>{document.body.classList.toggle('large-text');storage.write('clab-large-text',document.body.classList.contains('large-text'))});if(storage.read('clab-large-text',false))document.body.classList.add('large-text');$('#menu-toggle').addEventListener('click',()=>$('#sidebar').classList.toggle('open'));
-    document.addEventListener('keydown',event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();$('#unit-search').focus()}if(event.key==='Escape')$('#sidebar').classList.remove('open')});
+    $('#reset-progress').addEventListener('click',()=>{completed.clear();storage.write('clab-completed',[]);renderUnit(activeIndex);showToastMessage('Learning progress reset.')});$('#font-toggle').addEventListener('click',()=>{document.body.classList.toggle('large-text');storage.write('clab-large-text',document.body.classList.contains('large-text'))});if(storage.read('clab-large-text',false)===true)document.body.classList.add('large-text');$('#menu-toggle').addEventListener('click',()=>setSidebarOpen(!$('#sidebar').classList.contains('open')));
+    document.addEventListener('keydown',event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();$('#unit-search').focus()}if(event.key==='Escape')setSidebarOpen(false)});
   }
 
   initialize();

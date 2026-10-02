@@ -18,7 +18,7 @@ The course covers 17 units: C foundations and program structure, types and varia
 
 ## Simulator
 
-The browser-only simulator includes editable C examples, sample output, and step-by-step views of variables, conditions, loops, arrays, function calls, recursion, pointers, structures, and virtual file operations. Choose a demo from the simulator menu, edit the code, then select **Run simulation** or press Ctrl/⌘ + Enter. The simulator is an educational model for its included examples and common beginner patterns; it is not a C compiler and does not execute arbitrary C source. File handling is visualized using an in-memory virtual file.
+The browser-only simulator includes editable C examples, sample output, and step-by-step views of variables, conditions, loops, arrays, function calls, recursion, pointers, structures, and virtual file operations. Choose a demo from the simulator menu, edit the code, then select **Run simulation** or press Ctrl/⌘ + Enter. It models included examples, one simple `for` or `while` loop (up to 30 rounds), or one basic condition at a time. Nested or combined control flow and arbitrary C source are not executed. File handling is visualized using an in-memory virtual file.
 
 ## Files
 
